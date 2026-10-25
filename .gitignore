@@ -1,0 +1,7 @@
+node_modules/
+# Données internes : ne jamais versionner
+*.xlsx
+captures*.json
+urls.txt
+*_mail.txt
+parcours/*.json

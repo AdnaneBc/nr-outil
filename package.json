@@ -1,0 +1,14 @@
+{
+  "name": "nr-outil",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Non-régression tracking : capture tc_vars + comparaison au plan WEBA",
+  "scripts": {
+    "robot": "node nr-robot.js",
+    "comparer": "node nr-compare.js"
+  },
+  "dependencies": {
+    "exceljs": "4.4.0",
+    "playwright-core": "1.48.2"
+  }
+}

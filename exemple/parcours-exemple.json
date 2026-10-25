@@ -1,0 +1,1 @@
+{"title":"FAI test","steps":[{"type":"setViewport","width":1280,"height":800},{"type":"navigate","url":"http://localhost:8765/home.html"},{"type":"click","selectors":[["aria/Voir le panier"],["#go"]]},{"type":"click","selectors":[["aria/Commander"],["xpath//html/body/button"]]}]}

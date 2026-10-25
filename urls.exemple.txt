@@ -1,0 +1,3 @@
+https://<domaine-de-test-du-mail>/offres-internet/test-eligibilite
+https://<domaine-de-test-du-mail>/offres-internet
+https://<domaine-de-test-du-mail>/forfaits-mobiles/avec-engagement
