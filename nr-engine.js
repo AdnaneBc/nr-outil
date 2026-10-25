@@ -193,7 +193,8 @@
 
   // scope : liste d'identifiants de lignes du plan ; captures : [{url, tc_vars, ligne?}]
   function run(plan, scope, captures) {
-    var byLine = {}, horsPerimetre = [];
+    // ecartees : captures en erreur masquées par une meilleure capture de la même ligne (à relire).
+    var byLine = {}, horsPerimetre = [], ecartees = [];
     captures.forEach(function (cap) {
       var m = matchLine(plan, scope, cap);
       if (!m) { horsPerimetre.push(cap); return; }
@@ -201,7 +202,11 @@
       var prev = byLine[m.id];
       var nko = res.filter(function (x) { return x.statut === KO; }).length;
       // Si une page est capturée plusieurs fois, on garde la meilleure capture.
-      if (!prev || nko < prev.nko) byLine[m.id] = { id: m.id, url: cap.url, checks: res, nko: nko, ambigu: m.ambigu, autres: m.autres };
+      var cur = { id: m.id, url: cap.url, tc_vars: cap.tc_vars, checks: res, nko: nko, ambigu: m.ambigu, autres: m.autres };
+      if (!prev || nko < prev.nko) {
+        if (prev && prev.nko) ecartees.push(prev);
+        byLine[m.id] = cur;
+      } else if (nko) ecartees.push(cur);
     });
     var results = scope.map(function (id) {
       var l = plan.lines[id];
@@ -212,7 +217,7 @@
         r.checks.some(function (c) { return c.statut === AV; }) ? AV : OK;
       return { id: id, type: l.type, statut: st, url: r.url, checks: r.checks, ambigu: r.ambigu, autres: r.autres };
     });
-    return { results: results, horsPerimetre: horsPerimetre };
+    return { results: results, horsPerimetre: horsPerimetre, ecartees: ecartees };
   }
 
   function mailDraft(res, titre) {
@@ -226,6 +231,7 @@
     L.push("- Pages KO : " + ko.length);
     if (av.length) L.push("- Pages à vérifier (variables conditionnelles absentes) : " + av.length);
     L.push("- Pages non testées : " + nt.length, "");
+    if (res.ecartees && res.ecartees.length) L.push("(" + res.ecartees.length + " capture(s) en erreur à relire dans l'onglet « Captures écartées » avant envoi.)", "");
     if (ko.length) {
       L.push("Détail des KO :");
       ko.forEach(function (r) {

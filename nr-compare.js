@@ -6,7 +6,9 @@
 //                      --perimetre NR_Boutique_precedente.xlsx \
 //                      --captures captures.json \
 //                      [--env PREPROD] [--titre "MEP du 28/10"] [--sortie NR_resultat.xlsx]
+//                      [--variables site,univers,parcours,page]
 //
+// --variables : ne contrôler que ces variables (par défaut : toutes celles du plan).
 // --perimetre : un ancien fichier NR (colonne A = numéros de ligne du plan) ou une liste "58,60,61".
 "use strict";
 const fs = require("fs");
@@ -73,6 +75,11 @@ async function main() {
       if (c.path === "env") c.rule = { type: "exact", value: a.env, label: a.env };
     }));
   }
+  if (a.variables) {
+    const keep = String(a.variables).split(/[,;\s]+/).filter(Boolean);
+    Object.values(plan.lines).forEach((l) => { l.checks = l.checks.filter((c) => keep.indexOf(c.path) >= 0); });
+    console.log("Variables contrôlées : " + keep.join(", "));
+  }
   const scope = await readScope(a.perimetre);
   const captures = JSON.parse(fs.readFileSync(a.captures, "utf8"));
   const res = E.run(plan, scope, captures);
@@ -111,6 +118,19 @@ async function main() {
   [8, 45, 34, 40, 40, 12, 50].forEach((w, i) => (wd.getColumn(i + 1).width = w));
   wd.autoFilter = "A1:G1";
 
+  if (res.ecartees.length) {
+    const we = wb.addWorksheet("Captures écartées");
+    we.addRow(["Ligne rapprochée", "URL", "site", "univers", "parcours", "page", "KO"]);
+    we.getRow(1).font = { bold: true };
+    res.ecartees.forEach((c) => {
+      const t = c.tc_vars || {};
+      const row = we.addRow([c.id, c.url, t.site, t.univers, t.parcours, t.page,
+        c.checks.filter((x) => x.statut === E.KO).map((x) => x.path + " : attendu " + x.attendu + ", observé " + x.observe).join("\n")]);
+      fill(row.getCell(7), ROUGE);
+    });
+    [10, 50, 14, 18, 14, 30, 60].forEach((w, i) => (we.getColumn(i + 1).width = w));
+  }
+
   if (res.horsPerimetre.length) {
     const wh = wb.addWorksheet("Hors périmètre");
     wh.addRow(["URL", "site", "univers", "parcours", "page"]);
@@ -125,7 +145,7 @@ async function main() {
   fs.writeFileSync(mailFile, mail, "utf8");
 
   const count = (s) => res.results.filter((r) => r.statut === s).length;
-  console.log("NR terminée : " + count(E.OK) + " OK, " + count(E.KO) + " KO, " + count(E.AV) + " à vérifier, " + count("NON_TESTEE") + " non testées, " + res.horsPerimetre.length + " captures hors périmètre.");
+  console.log("NR terminée : " + count(E.OK) + " OK, " + count(E.KO) + " KO, " + count(E.AV) + " à vérifier, " + count("NON_TESTEE") + " non testées, " + res.horsPerimetre.length + " captures hors périmètre, " + res.ecartees.length + " captures écartées en erreur.");
   console.log("Fichier : " + path.resolve(out));
   console.log("Mail    : " + path.resolve(mailFile));
 }

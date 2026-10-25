@@ -38,6 +38,7 @@ Les modes s'additionnent : lance-les avec des fichiers de sortie différents, pu
 ```
 node nr-compare.js --plan "Documentations WEBA - Plans de tracking.xlsx" --perimetre NR_Boutique_PlanTracking_PanierV5_20260623.xlsx --captures captures.json --env PREPROD --titre "MEP sprint 16"
 ```
+- `--variables site,univers,parcours,page` : ne contrôler que ces variables (par défaut : toutes celles du plan). Une capture en erreur masquée par une meilleure capture de la même page est listée dans l'onglet « Captures écartées ».
 - `--perimetre` : l'ancien fichier NR (sa colonne A donne les lignes du plan à contrôler) ou une liste `58,60,61`.
 - `--env` : valeur attendue de `tc_vars.env` sur l'environnement de test. **À confirmer sur l'environnement de test** (PREPROD ?).
 - Le plan est toujours relu dans sa version du jour, donc les colonnes ajoutées depuis juin sont prises en compte.
