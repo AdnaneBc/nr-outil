@@ -56,7 +56,8 @@ function brancherCapture(page) {
     captures.push({ parcours: parcoursCourant, url: page.url(), date: new Date().toISOString(), tc_vars: tc });
     console.log("  capturé : " + (tc.page || "?") + "  (" + page.url().slice(0, 90) + ")");
   }
-  page.on("load", () => { setTimeout(capturer, 300); setTimeout(capturer, PAUSE); });
+  page.on("domcontentloaded", () => { setTimeout(capturer, 300); setTimeout(capturer, PAUSE); });
+  page.on("load", () => setTimeout(capturer, 300));
   const timer = setInterval(capturer, 1000);
   page.on("close", () => clearInterval(timer));
   return capturer;
@@ -103,7 +104,7 @@ async function rejouer(page, fichier, urlBase, capturer) {
       else if (st.type === "navigate") {
         let url = st.url;
         if (urlBase) { const u = new URL(url); url = urlBase.replace(/\/$/, "") + u.pathname + u.search; }
-        await page.goto(url, { waitUntil: "load" });
+        await aller(page, url);
       } else if (st.type === "click" || st.type === "doubleClick") {
         const el = await premierVisible(page, st.selectors, 15000);
         if (!el) throw new Error("élément introuvable");
@@ -131,6 +132,17 @@ async function rejouer(page, fichier, urlBase, capturer) {
   return { parcours: parcoursCourant, erreurs };
 }
 
+// Les pages Bouygues chargent beaucoup de scripts tiers : l'événement "load" peut ne jamais arriver à temps.
+// On attend le DOM, et un dépassement de délai n'arrête pas le robot (la capture se fait quand tc_vars est là).
+async function aller(page, url) {
+  try {
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+  } catch (e) {
+    if (!/Timeout/i.test(e.message)) throw e;
+    console.log("  (page lente, on continue : " + url.slice(0, 90) + ")");
+  }
+}
+
 async function main() {
   const browser = await pw.chromium.launch({
     channel: a.navigateur === "aucun" ? undefined : (a.navigateur || "chrome"),
@@ -146,7 +158,7 @@ async function main() {
     parcoursCourant = "urls";
     for (const u of urls) {
       console.log("Visite : " + u);
-      try { await page.goto(u, { waitUntil: "load", timeout: 60000 }); await page.waitForTimeout(PAUSE + 500); await capturer(); }
+      try { await aller(page, u); await page.waitForTimeout(PAUSE + 500); await capturer(); }
       catch (e) { console.log("  ! " + e.message.split("\n")[0]); bilan.push({ parcours: u, erreurs: ["page non chargée"] }); }
     }
     await browser.close();
@@ -160,7 +172,7 @@ async function main() {
   } else {
     if (!a.url) { console.error("Indique --url (mode manuel) ou --parcours (mode automatique)."); process.exit(1); }
     parcoursCourant = "manuel";
-    await page.goto(a.url);
+    await aller(page, a.url);
     console.log("Navigue sur les parcours. Ferme la fenêtre Chrome quand tu as fini.");
     await new Promise((r) => { page.on("close", r); browser.on("disconnected", r); });
     try { await browser.close(); } catch (e) { /* déjà fermé */ }
