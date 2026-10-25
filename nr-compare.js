@@ -62,28 +62,25 @@ function fill(cell, argb) {
   cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb } };
 }
 
-async function main() {
-  const a = args();
-  if (!a.plan || !a.perimetre || !a.captures) {
-    console.error("Paramètres requis : --plan, --perimetre, --captures (voir l'en-tête du script).");
-    process.exit(1);
-  }
-  const planRows = await readRows(a.plan, "Plan de Tracking - Pages");
+// opts : { plan, perimetre, captures (tableau ou chemin), env, variables, titre, sortie, log }
+// Renvoie { res, sortie, mailFile, mail, compte }.
+async function comparer(opts) {
+  const log = opts.log || console.log;
+  const planRows = await readRows(opts.plan, "Plan de Tracking - Pages");
   const plan = E.buildPlan(planRows);
-  if (a.env) {
+  if (opts.env) {
     Object.values(plan.lines).forEach((l) => l.checks.forEach((c) => {
-      if (c.path === "env") c.rule = { type: "exact", value: a.env, label: a.env };
+      if (c.path === "env") c.rule = { type: "exact", value: opts.env, label: opts.env };
     }));
   }
-  if (a.variables) {
-    const keep = String(a.variables).split(/[,;\s]+/).filter(Boolean);
+  if (opts.variables) {
+    const keep = (Array.isArray(opts.variables) ? opts.variables : String(opts.variables).split(/[,;\s]+/)).filter(Boolean);
     Object.values(plan.lines).forEach((l) => { l.checks = l.checks.filter((c) => keep.indexOf(c.path) >= 0); });
-    console.log("Variables contrôlées : " + keep.join(", "));
+    log("Variables contrôlées : " + keep.join(", "));
   }
-  const scope = await readScope(a.perimetre);
-  const captures = JSON.parse(fs.readFileSync(a.captures, "utf8"));
+  const scope = await readScope(opts.perimetre);
+  const captures = Array.isArray(opts.captures) ? opts.captures : JSON.parse(fs.readFileSync(opts.captures, "utf8"));
   const res = E.run(plan, scope, captures);
-
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("NR");
   const header = plan.header.slice(0, plan.cols.filter((c) => c.label).length);
@@ -138,16 +135,27 @@ async function main() {
   }
 
   const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const out = a.sortie || "NR_resultat_" + stamp + ".xlsx";
+  const out = opts.sortie || "NR_resultat_" + stamp + ".xlsx";
   await wb.xlsx.writeFile(out);
-  const mail = E.mailDraft(res, a.titre);
+  const mail = E.mailDraft(res, opts.titre);
   const mailFile = out.replace(/\.xlsx$/i, "_mail.txt");
   fs.writeFileSync(mailFile, mail, "utf8");
-
   const count = (s) => res.results.filter((r) => r.statut === s).length;
-  console.log("NR terminée : " + count(E.OK) + " OK, " + count(E.KO) + " KO, " + count(E.AV) + " à vérifier, " + count("NON_TESTEE") + " non testées, " + res.horsPerimetre.length + " captures hors périmètre, " + res.ecartees.length + " captures écartées en erreur.");
-  console.log("Fichier : " + path.resolve(out));
-  console.log("Mail    : " + path.resolve(mailFile));
+  const compte = { ok: count(E.OK), ko: count(E.KO), aVerifier: count(E.AV), nonTestees: count("NON_TESTEE"), horsPerimetre: res.horsPerimetre.length, ecartees: res.ecartees.length };
+  log("NR terminée : " + compte.ok + " OK, " + compte.ko + " KO, " + compte.aVerifier + " à vérifier, " + compte.nonTestees + " non testées, " + compte.horsPerimetre + " captures hors périmètre, " + compte.ecartees + " captures écartées en erreur.");
+  return { res, sortie: path.resolve(out), mailFile: path.resolve(mailFile), mail, compte };
 }
 
-main().catch((e) => { console.error("Erreur : " + e.message); process.exit(1); });
+module.exports = { comparer, readScope };
+
+// ---------- Ligne de commande ----------
+if (require.main === module) {
+  const a = args();
+  if (!a.plan || !a.perimetre || !a.captures) {
+    console.error("Paramètres requis : --plan, --perimetre, --captures (voir l'en-tête du script).");
+    process.exit(1);
+  }
+  comparer({ plan: a.plan, perimetre: a.perimetre, captures: a.captures, env: a.env, variables: a.variables, titre: a.titre, sortie: a.sortie })
+    .then((r) => { console.log("Fichier : " + r.sortie); console.log("Mail    : " + r.mailFile); })
+    .catch((e) => { console.error("Erreur : " + e.message); process.exit(1); });
+}

@@ -5,3 +5,4 @@ captures*.json
 urls.txt
 *_mail.txt
 parcours/*.json
+donnees/

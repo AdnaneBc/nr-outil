@@ -1,5 +1,19 @@
 # Outil NR : non-régression tracking automatique
 
+## Démarrage rapide : l'interface graphique (v0.2)
+
+```
+npm install      # une seule fois
+npm start        # ouvre l'interface dans le navigateur (http://127.0.0.1:3737)
+```
+
+1. **Fichiers de référence** : ajoute le plan WEBA et ton dernier fichier NR (le périmètre). Ils sont gardés dans `donnees/`, hors de GitHub.
+2. **Liens du mail** : colle les liens du mail de NR. Le domaine de test est déduit du premier lien.
+3. **Parcours** : coche les parcours à rejouer. « Enregistrer un nouveau parcours » ouvre Chrome : tu fais le parcours (box, adresse éligible, panier), puis tu cliques sur « Terminer ». Pas besoin du Recorder de Chrome. Les mots de passe ne sont jamais enregistrés : au rejeu, le robot attend que tu les tapes.
+4. **Lancer la NR** : la navigation, la capture et la comparaison s'enchaînent. Tu obtiens le tableau vert/rouge, l'Excel à télécharger et le mail à copier.
+
+Tout tourne en local : le serveur n'écoute que sur ta machine.
+
 Version 0.1 du 2026-10-25. Prototype testé sur des pages simulées et sur le vrai plan WEBA, **pas encore sur l'environnement de test réel**.
 
 ## Ce que fait l'outil

@@ -1,9 +1,10 @@
 {
   "name": "nr-outil",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Non-régression tracking : capture tc_vars + comparaison au plan WEBA",
   "scripts": {
+    "start": "node nr-app.js",
     "robot": "node nr-robot.js",
     "comparer": "node nr-compare.js"
   },
