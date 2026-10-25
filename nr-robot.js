@@ -11,7 +11,7 @@
 //   -> chaque fichier .json du dossier est un parcours (FAI, Mobile, Mixte...).
 //
 // Mode liste d'URLs (les liens du mail de NR, un par ligne) :
-//   node nr-robot.js --urls urls-ap2110.txt [--sortie captures.json]
+//   node nr-robot.js --urls urls.txt [--sortie captures.json]
 //   -> visite chaque URL et capture la page d'arrivée (le reste du parcours passe par --parcours).
 //
 // Options : --navigateur chrome|msedge (défaut chrome), --invisible (sans fenêtre), --pause 1500 (ms avant capture).

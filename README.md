@@ -1,6 +1,6 @@
 # Outil NR : non-régression tracking automatique
 
-Version 0.1 du 2026-10-25. Prototype testé sur des pages simulées et sur le vrai plan WEBA, **pas encore sur AP2110**.
+Version 0.1 du 2026-10-25. Prototype testé sur des pages simulées et sur le vrai plan WEBA, **pas encore sur l'environnement de test réel**.
 
 ## Ce que fait l'outil
 
@@ -39,7 +39,7 @@ Les modes s'additionnent : lance-les avec des fichiers de sortie différents, pu
 node nr-compare.js --plan "Documentations WEBA - Plans de tracking.xlsx" --perimetre NR_Boutique_PlanTracking_PanierV5_20260623.xlsx --captures captures.json --env PREPROD --titre "MEP sprint 16"
 ```
 - `--perimetre` : l'ancien fichier NR (sa colonne A donne les lignes du plan à contrôler) ou une liste `58,60,61`.
-- `--env` : valeur attendue de `tc_vars.env` sur l'environnement de test. **À confirmer sur AP2110** (PREPROD ?).
+- `--env` : valeur attendue de `tc_vars.env` sur l'environnement de test. **À confirmer sur l'environnement de test** (PREPROD ?).
 - Le plan est toujours relu dans sa version du jour, donc les colonnes ajoutées depuis juin sont prises en compte.
 
 **Étape 3 : relire et répondre.** Ouvre l'Excel et regarde les lignes rouges et orange. Copie le brouillon de mail dans ta réponse à la demandeuse, ajuste-le et joins l'Excel.
@@ -56,7 +56,7 @@ Si le front change avant la MEP et qu'un bouton n'est plus trouvé, le robot arr
 ## Limites connues (v0.1)
 
 - **Pages Merci, bascule vers le paiement, pages d'erreur** : non testables, comme aujourd'hui.
-- **Renouvellement** : il faut un compte de test et un code OTP (outil picasso). En v0.1, tu fais cette partie en mode manuel. L'automatisation de l'OTP est possible plus tard.
+- **Renouvellement** : il faut un compte de test et un code OTP. En v0.1, tu fais cette partie en mode manuel. L'automatisation de l'OTP est possible plus tard.
 - Les **clics** (onglet Evenements) ne sont pas encore contrôlés, seulement les pages.
 - Une règle mal rédigée dans le plan peut donner un faux KO (ex. `nom_forfait` écrit comme une valeur fixe). L'onglet Détail permet de le repérer vite.
 - Les identifiants de test ne sont jamais écrits dans l'outil : tu les saisis toi-même pendant le parcours.
