@@ -30,6 +30,18 @@ function args() {
 const a = args();
 const PAUSE = Number(a.pause || 1500);
 const captures = [];
+const SORTIE = a.sortie || "captures.json";
+
+// Écrit le fichier à chaque capture : rien n'est perdu si le robot est interrompu.
+function sauvegarder() {
+  fs.writeFileSync(SORTIE, JSON.stringify(captures, null, 1), "utf8");
+}
+
+process.on("SIGINT", () => {
+  sauvegarder();
+  console.log("\nArrêt demandé : " + captures.length + " pages capturées -> " + path.resolve(SORTIE));
+  process.exit(0);
+});
 let parcoursCourant = "";
 
 // Signature d'une page : on capture de nouveau quand l'une de ces variables change (étapes d'un checkout dynamique).
@@ -54,6 +66,7 @@ function brancherCapture(page) {
     if (!tc || sig === derniere) return;
     derniere = sig;
     captures.push({ parcours: parcoursCourant, url: page.url(), date: new Date().toISOString(), tc_vars: tc });
+    sauvegarder();
     console.log("  capturé : " + (tc.page || "?") + "  (" + page.url().slice(0, 90) + ")");
   }
   page.on("domcontentloaded", () => { setTimeout(capturer, 300); setTimeout(capturer, PAUSE); });
@@ -172,15 +185,22 @@ async function main() {
   } else {
     if (!a.url) { console.error("Indique --url (mode manuel) ou --parcours (mode automatique)."); process.exit(1); }
     parcoursCourant = "manuel";
+    console.log("Navigue sur les parcours dans la fenêtre Chrome ouverte par le robot (nouveaux onglets compris).");
+    console.log("Chaque nouvelle page affiche une ligne « capturé ». Pour finir : ferme la fenêtre, ou Ctrl+C ici.");
+    // Les liens qui s'ouvrent dans un nouvel onglet sont suivis aussi.
+    context.on("page", (p) => { brancherCapture(p); console.log("  (nouvel onglet suivi)"); });
     await aller(page, a.url);
-    console.log("Navigue sur les parcours. Ferme la fenêtre Chrome quand tu as fini.");
-    await new Promise((r) => { page.on("close", r); browser.on("disconnected", r); });
+    await new Promise((r) => {
+      browser.on("disconnected", r);
+      const verifier = () => setTimeout(() => { if (context.pages().length === 0) r(); }, 200);
+      page.on("close", verifier);
+      context.on("page", (p) => p.on("close", verifier));
+    });
     try { await browser.close(); } catch (e) { /* déjà fermé */ }
   }
 
-  const out = a.sortie || "captures.json";
-  fs.writeFileSync(out, JSON.stringify(captures, null, 1), "utf8");
-  console.log("\n" + captures.length + " pages capturées -> " + path.resolve(out));
+  sauvegarder();
+  console.log("\n" + captures.length + " pages capturées -> " + path.resolve(SORTIE));
   bilan.filter((b) => b.erreurs.length).forEach((b) => console.log("Parcours interrompu : " + b.parcours + " -> " + b.erreurs.join(" ; ")));
 }
 
